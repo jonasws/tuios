@@ -12111,3 +12111,17 @@ resident startup command, and `TestPluginPRStatus` for a hook plugin. Run on
 |---|---|---|---|
 | stats counts runs | the count cut from `Start` | "plugins stats does not show the startup's processes, memory and runs" | **caught** |
 | stats counts the processes in the plugin's sessions | the loop over the session members cut | the same message | **caught** |
+## TML motion
+
+`TestIdleCostStaysLow/tml_surface_after_motion` opens a surface whose cards
+enter one after the other and whose toast has a ttl of 1 s, with
+`appearance.motion = "full"`. It waits for the toast to go, then holds the idle
+budget of a still surface. Only the client's frame timer draws the surface at
+the end of the ttl, because nothing else changes it.
+
+Run on 2026-11-03 on Linux. The fixed build passes: over the 10 s window,
+0 renders, 0 ticks and 98 context switches.
+
+| Claim | Control | Where it fails | Verdict |
+| --- | --- | --- | --- |
+| The client draws a surface again when it asks for a frame | `tmlArmFrame` arms no timer | "the toast never went at the end of its ttl" | **caught** |

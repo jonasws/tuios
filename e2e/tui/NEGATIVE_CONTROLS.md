@@ -12100,3 +12100,18 @@ control against the branch head with one change:
 | dev reloads a changed folder | the install in the loop cut | "the new action after a reload" | **caught** |
 | new writes the workflow | `all:` cut from the embed | "new made no .github/workflows/plugin.yml" | **caught** |
 
+
+## set-config with no client applies on attach
+
+`TestSetConfigWithNoClientAppliesOnAttach` sets `appearance.sidebar.row_style`
+to `pill` on a session with no client, then attaches one. The reply must say
+the next client applies the value. The client must draw the rail rows as pills,
+write the value to `config.toml`, and `get-config` must read it back. Run on
+2026-11-03 on Linux. The test passes on the fixed build. Each control was built
+into its own binary.
+
+| Control: what was cut | Where it fails | Verdict |
+| --- | --- | --- |
+| Main without the fix | "the reply does not say the next client applies the value" | **caught** |
+| The attach handler does not call `applyWaitingOptions` | "the client that attached did not apply appearance.sidebar.row_style=pill" | **caught** |
+| The client drops a routed command that arrives before `OnRemoteCommand`, as main does | "the client that attached did not apply appearance.sidebar.row_style=pill". The command arrives before the program registers its handler on every run | **caught** |

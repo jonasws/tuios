@@ -63,23 +63,58 @@ func scrollTerminalPane(win *terminal.Window, action string) {
 	}
 }
 
-// handleTerminalMouseBinding gives the middle button the same terminal-mode
-// binding lookup as a key. "middle" is Bubble Tea's event spelling and is
-// deliberately the only mouse button admitted here: "left" and "right" are
-// already keyboard key names, so looking every button up in the keyboard table
-// would make an arrow binding also capture a click.
-//
-// A bare middle press over a program that tracks the mouse (vim with
-// mouse=a, lazygit, a nested tmux) goes to that program, as it did before
-// the binding existed. A binding with a modifier, such as ctrl+middle, runs
-// over such a program too.
-func handleTerminalMouseBinding(msg tea.MouseClickMsg, o *app.OS, clicked int) (*app.OS, tea.Cmd, bool) {
-	if msg.Button == tea.MouseMiddle {
-		// A new press starts over. A release that never came must not make
-		// this press's release disappear.
-		o.MiddleBindingPressed = false
+// boundMouseButton reports whether button is one a key binding can name:
+// Bubble Tea's "middle", "backward" and "forward". "left" and "right" are
+// deliberately not: they are already keyboard key names, so looking every
+// button up in the keyboard table would make an arrow binding also capture a
+// click.
+func boundMouseButton(button tea.MouseButton) bool {
+	switch button {
+	case tea.MouseMiddle, tea.MouseBackward, tea.MouseForward:
+		return true
 	}
-	if o.Mode != app.TerminalMode || msg.Button != tea.MouseMiddle ||
+	return false
+}
+
+// handleGlobalMouseBinding runs a [keybindings.global] binding on a backward or
+// forward press. It runs in every mode, wherever the pointer is, and over a
+// pane whose program tracks the mouse: few programs use these buttons, and a
+// navigation binding that worked only over some programs would be useless.
+// Middle is not a global key, so it never gets here.
+func handleGlobalMouseBinding(msg tea.MouseClickMsg, o *app.OS) (*app.OS, tea.Cmd, bool) {
+	if msg.Button != tea.MouseBackward && msg.Button != tea.MouseForward {
+		return o, nil, false
+	}
+	// A new press starts over. A release that never came must not make this
+	// press's release disappear.
+	o.ClearMouseBindingPress(msg.Button)
+	if o.KeybindRegistry == nil {
+		return o, nil, false
+	}
+	action := o.KeybindRegistry.Action(config.TableGlobal, msg.String())
+	if action == "" || !GetDispatcher().HasAction(action) {
+		return o, nil, false
+	}
+	o.MarkMouseBindingPress(msg.Button)
+	return dispatchAction(action, tea.KeyPressMsg{}, o)
+}
+
+// handleTerminalMouseBinding gives the middle, backward and forward buttons the
+// same terminal-mode binding lookup as a key.
+//
+// A bare press over a program that tracks the mouse (vim with mouse=a,
+// lazygit, a nested tmux) goes to that program, as it did before the binding
+// existed. A binding with a modifier, such as ctrl+middle, runs over such a
+// program too. A global binding on the same key wins; see
+// handleGlobalMouseBinding.
+func handleTerminalMouseBinding(msg tea.MouseClickMsg, o *app.OS, clicked int) (*app.OS, tea.Cmd, bool) {
+	if !boundMouseButton(msg.Button) {
+		return o, nil, false
+	}
+	// A new press starts over. A release that never came must not make this
+	// press's release disappear.
+	o.ClearMouseBindingPress(msg.Button)
+	if o.Mode != app.TerminalMode ||
 		o.KeybindRegistry == nil || clicked < 0 || clicked >= len(o.Windows) {
 		return o, nil, false
 	}
@@ -95,7 +130,7 @@ func handleTerminalMouseBinding(msg tea.MouseClickMsg, o *app.OS, clicked int) (
 		return o, nil, false
 	}
 
-	o.MiddleBindingPressed = true
+	o.MarkMouseBindingPress(msg.Button)
 	o.FocusWindowFromClick(clicked, msg.X, msg.Y)
 	if terminalScrollAction(action) {
 		handleTerminalScrollBinding(action, o, win)
@@ -109,17 +144,16 @@ func handleTerminalMouseBinding(msg tea.MouseClickMsg, o *app.OS, clicked int) (
 	return next, cmd, handled
 }
 
-// terminalMouseBindingConsumesRelease reports whether a binding took the
-// middle press this release ends, and clears the mark. It is decided at the
-// press, not by where the release lands: a release outside the pane's content
-// still belongs to the binding, and a release over the content after a press
-// the binding did not take still goes to the program.
+// terminalMouseBindingConsumesRelease reports whether a binding took the press
+// this release ends, and clears the mark. It is decided at the press, not by
+// where the release lands: a release outside the pane's content still belongs
+// to the binding, and a release over the content after a press the binding did
+// not take still goes to the program.
 func terminalMouseBindingConsumesRelease(msg tea.MouseReleaseMsg, o *app.OS) bool {
-	if msg.Button != tea.MouseMiddle || !o.MiddleBindingPressed {
+	if !boundMouseButton(msg.Button) {
 		return false
 	}
-	o.MiddleBindingPressed = false
-	return true
+	return o.ConsumeMouseBindingRelease(msg.Button)
 }
 
 func terminalMouseActionCanRun(action string, win *terminal.Window) bool {

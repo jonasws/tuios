@@ -205,7 +205,7 @@ func commandProblem(c CommandBinding, normalizer *KeyNormalizer) string {
 	case c.ResolvedName() == DefaultScratchName:
 		return "The name scratch belongs to the built-in scratch terminal. Use a different name."
 	}
-	if ok, msg := normalizer.ValidateKey(c.BareKey()); !ok {
+	if ok, msg := normalizer.ValidateSectionKey(c.Section(), c.BareKey()); !ok {
 		return msg
 	}
 	for _, f := range []struct{ key, spec string }{{"width", c.Width}, {"height", c.Height}} {

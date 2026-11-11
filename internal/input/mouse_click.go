@@ -77,6 +77,15 @@ func handleMouseClick(msg tea.MouseClickMsg, o *app.OS) (*app.OS, tea.Cmd) {
 		}
 	}
 
+	// A backward or forward press with a global binding runs it before any
+	// position-dependent handling, over a mouse-tracking pane included. An open
+	// overlay keeps the mouse for itself.
+	if !o.OverlayActive() {
+		if next, cmd, handled := handleGlobalMouseBinding(msg, o); handled {
+			return next, cmd
+		}
+	}
+
 	// Rail panes keep their ordinary title bars. A title click focuses that
 	// exact pane; its controls must never fall through to the center session.
 	if edge, w := o.SidebarSessionTitlePaneAt(X, Y); w != nil {
@@ -277,10 +286,10 @@ func handleMouseClick(msg tea.MouseClickMsg, o *app.OS) (*app.OS, tea.Cmd) {
 		return o, nil
 	}
 
-	// A middle press over pane content can be a terminal-mode binding. It is
-	// looked up before guest mouse forwarding, so the shipped paste gesture also
-	// works over a program that tracks the mouse; removing or changing the
-	// binding hands the press back to that program.
+	// A middle, backward or forward press over pane content can be a
+	// terminal-mode binding. It is looked up before guest mouse forwarding, so
+	// the shipped paste gesture also works over a program that tracks the mouse;
+	// removing or changing the binding hands the press back to that program.
 	if next, cmd, handled := handleTerminalMouseBinding(msg, o, clickedWindowIndex); handled {
 		return next, cmd
 	}

@@ -712,18 +712,23 @@ func (kn *KeyNormalizer) ValidateKey(key string) (bool, string) {
 }
 
 // ValidateSectionKey is ValidateKey for a key in the binding table section.
-// It also accepts the middle mouse button, which Bubble Tea spells "middle",
-// in terminal_mode only, and with ctrl, alt and shift only: no other table
-// looks a mouse press up, and Bubble Tea's mouse events carry no other
-// modifier. The left and right buttons are not accepted, because "left" and
-// "right" are the arrow keys.
+// It also accepts the mouse buttons Bubble Tea spells "middle", "backward" and
+// "forward". "middle" is a key in terminal_mode only; "backward" and "forward"
+// are keys in terminal_mode and global, the tables a mouse press is looked up
+// in. All three take ctrl, alt and shift only, because Bubble Tea's mouse
+// events carry no other modifier. The left and right buttons are not accepted,
+// because "left" and "right" are the arrow keys.
 func (kn *KeyNormalizer) ValidateSectionKey(section, key string) (bool, string) {
 	parts := strings.Split(strings.ToLower(strings.TrimSpace(key)), "+")
-	if parts[len(parts)-1] != middleButton {
+	button := parts[len(parts)-1]
+	if !isMouseButtonKey(button) {
 		return kn.ValidateKey(key)
 	}
-	if section != SectionTerminalMode {
+	switch {
+	case button == middleButton && section != SectionTerminalMode:
 		return false, "the middle mouse button is a key only in [keybindings.terminal_mode]"
+	case button != middleButton && section != SectionTerminalMode && section != SectionGlobal:
+		return false, "the " + button + " mouse button is a key only in [keybindings.global] and [keybindings.terminal_mode]"
 	}
 	seen := make(map[string]bool)
 	for _, mod := range parts[:len(parts)-1] {
@@ -731,7 +736,7 @@ func (kn *KeyNormalizer) ValidateSectionKey(section, key string) (bool, string) 
 		switch name {
 		case "ctrl", "alt", "shift":
 		default:
-			return false, "the middle mouse button takes only ctrl, alt and shift, not " + mod
+			return false, "the " + button + " mouse button takes only ctrl, alt and shift, not " + mod
 		}
 		if seen[name] {
 			return false, "duplicate modifier: " + mod
@@ -741,8 +746,16 @@ func (kn *KeyNormalizer) ValidateSectionKey(section, key string) (bool, string) 
 	return true, ""
 }
 
-// middleButton is how Bubble Tea spells a middle mouse button press.
-const middleButton = "middle"
+// The mouse buttons a binding can name, as Bubble Tea spells them.
+const (
+	middleButton   = "middle"
+	backwardButton = "backward"
+	forwardButton  = "forward"
+)
+
+func isMouseButtonKey(name string) bool {
+	return name == middleButton || name == backwardButton || name == forwardButton
+}
 
 // validSpecialKeys are the key names ValidateKey accepts beyond single runes
 // and function keys. It is only read. The left/right modifier names are keys in

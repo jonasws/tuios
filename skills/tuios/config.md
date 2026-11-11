@@ -577,6 +577,14 @@ take a modifier, such as `ctrl+middle`. By default, `shift+pgup` and
 `shift+pgdown` scroll a pane page and `middle` pastes the host clipboard. A
 program that uses the mouse gets a plain middle press.
 
+`backward` and `forward` are the mouse's back and forward buttons, with `ctrl`,
+`alt` or `shift`, such as `ctrl+forward`. They work in `[keybindings.global]`,
+in `[keybindings.terminal_mode]` and as the `key` of a `[[keybindings.command]]`
+entry without `prefix+`. A global binding on one runs in every mode, wherever
+the pointer is, and over a program that uses the mouse. In
+`[keybindings.terminal_mode]` they work as `middle` does. An unbound press goes
+to a program that uses the mouse as before.
+
 On a layout for a non-Latin script, bindings match the physical key. A key that
 types `ш` on a Ukrainian layout runs the binding on `i`, the US key at the same
 position, unless `ш` has a binding of its own. This needs Ghostty, kitty,

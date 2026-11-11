@@ -208,7 +208,9 @@ You can share one `config.toml` between a Mac and a Linux machine, for example w
 
 The `[keybindings.terminal_mode]` table also accepts `middle` for the middle
 mouse button, with `ctrl`, `alt` or `shift`, such as `ctrl+middle`. A program
-that uses the mouse gets a plain middle press.
+that uses the mouse gets a plain middle press. `backward` and `forward` name the
+back and forward mouse buttons in `[keybindings.global]` and
+`[keybindings.terminal_mode]`.
 
 tuios ignores a key that it cannot read and loads the rest of the file. The action gets its default key when it has no other key. If another action already has that default key, the action has no key. tuios shows a config problem when it starts, and the log viewer (leader `D` `l`) names each key and its file. `tuios keybinds doctor` and `tuios config apply` list these keys too. A table under `[keybindings]` that tuios does not have, such as `[keybindings.terminal]` for `[keybindings.terminal_mode]`, is a config problem too: tuios ignores every binding in it, and the log viewer and `tuios config apply` name the table and the table you most likely meant.
 

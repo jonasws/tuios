@@ -162,8 +162,9 @@ table of their own.
 
 After the scopes, the list shows the fixed keys. tuios reads these keys itself,
 and you cannot rebind them: copy mode, hints mode, the message view, the ways
-out of the spotlight, the list filter keys and the fixed mouse gestures. The middle
-button is an exception: terminal mode binds it like a key. The help overlay
+out of the spotlight, the list filter keys and the fixed mouse gestures. The
+middle, backward and forward buttons are an exception: a binding table binds
+them like keys. The help overlay
 (`Ctrl+B ?`) shows the same rows. The last table shows the actions that have no
 default key. Bind one in `config.toml`, or run it from the command palette.
 
@@ -401,7 +402,26 @@ In `[keybindings.terminal_mode]`, `middle` names a press of the middle mouse
 button. It accepts `ctrl`, `alt` and `shift`, such as `ctrl+middle`. Other
 tables do not accept it. A program that uses the mouse, such as vim with
 `mouse=a`, lazygit or tmux, gets a plain middle press. A binding with a
-modifier runs over such a program too. Other mouse gestures are fixed.
+modifier runs over such a program too.
+
+`backward` and `forward` name the back and forward buttons of a mouse. They
+take `ctrl`, `alt` and `shift` too, such as `ctrl+forward`. They work in
+`[keybindings.global]`, in `[keybindings.terminal_mode]`, and as the `key` of a
+`[[keybindings.command]]` entry without `prefix+`. Other tables do not accept
+them.
+
+```toml
+[keybindings.global]
+next_workspace = ["forward"]
+prev_workspace = ["backward"]
+```
+
+A global binding on one of these buttons runs in every mode, wherever the
+pointer is, and over a program that uses the mouse. A binding in
+`[keybindings.terminal_mode]` works as `middle` does: a plain press goes to a
+program that uses the mouse, and a press with a modifier runs the binding. A
+button with no binding goes to such a program as before. When the same key is in
+both tables, the global binding runs. Other mouse gestures are fixed.
 
 You can use one `config.toml` on macOS and on Linux. On Linux, `opt+1` is `alt+1`. `tuios keybinds doctor` lists these keys for information.
 
@@ -1014,7 +1034,8 @@ height = "80%"
 
 - `key` is the key that runs the command. A key that starts with `prefix+`
   works after the leader (`Ctrl+B`). Any other key works in window mode and
-  in terminal mode.
+  in terminal mode. Such a key can also be `backward` or `forward`, the
+  mouse buttons, with `ctrl`, `alt` or `shift`.
 - `type` is one of these:
   - `scratch`: a scratch terminal of its own. The key shows it and hides it,
     as `Ctrl+B g` does for the built-in one. Each entry has its own layout:

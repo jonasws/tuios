@@ -655,10 +655,11 @@ func pressKey(t *testing.T, o *app.OS, spec string) *app.OS {
 	return next
 }
 
-// pressBinding sends either a keyboard binding or the terminal-mode middle
-// button binding through the real input entry point. Mouse presses are bindings
-// too, but they are not KeyPressMsg values and pretending otherwise would let
-// a listed mouse default stay disconnected from its handler.
+// pressBinding sends either a keyboard binding or a mouse button binding
+// (middle, backward, forward) through the real input entry point. Mouse
+// presses are bindings too, but they are not KeyPressMsg values and
+// pretending otherwise would let a listed mouse default stay disconnected from
+// its handler.
 func pressBinding(t *testing.T, o *app.OS, spec string) *app.OS {
 	t.Helper()
 	base := spec
@@ -675,15 +676,18 @@ func pressBinding(t *testing.T, o *app.OS, spec string) *app.OS {
 		mod |= bit
 		base = rest
 	}
-	if base != "middle" {
+	button, isMouse := map[string]tea.MouseButton{
+		"middle": tea.MouseMiddle, "backward": tea.MouseBackward, "forward": tea.MouseForward,
+	}[base]
+	if !isMouse {
 		return pressKey(t, o, spec)
 	}
 	next, _ := HandleInput(tea.MouseClickMsg{
-		X: 10, Y: 10, Button: tea.MouseMiddle, Mod: mod,
+		X: 10, Y: 10, Button: button, Mod: mod,
 	}, o)
 	got, ok := next.(*app.OS)
 	if !ok {
-		t.Fatalf("middle binding returned %T, want *app.OS", next)
+		t.Fatalf("mouse binding returned %T, want *app.OS", next)
 	}
 	return got
 }

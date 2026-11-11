@@ -2195,9 +2195,10 @@ type OS struct {
 	// PiPPressed says the button that is down was pressed on the
 	// picture-in-picture view, so its release is the view's as well.
 	PiPPressed bool
-	// MiddleBindingPressed says a terminal-mode binding took the middle
-	// button press, so its release is the binding's as well.
-	MiddleBindingPressed bool
+	// mouseBindingButtons has a bit for each mouse button whose press a key
+	// binding took, so the release is the binding's as well. See
+	// MarkMouseBindingPress.
+	mouseBindingButtons uint16
 	// scratchPending says the scratch terminal was asked for and has not
 	// arrived yet, and scratchPendingAt is when. See scratch.go.
 	scratchPending   string
@@ -2618,4 +2619,27 @@ func (m *OS) Cleanup() {
 	for _, w := range m.Windows {
 		w.Close()
 	}
+}
+
+// MarkMouseBindingPress records that a binding took the press of button.
+func (o *OS) MarkMouseBindingPress(button tea.MouseButton) {
+	o.mouseBindingButtons |= 1 << uint(button)
+}
+
+// ClearMouseBindingPress forgets a binding's hold on button. A new press calls
+// it first, so a release that never came cannot make the next press's release
+// disappear.
+func (o *OS) ClearMouseBindingPress(button tea.MouseButton) {
+	o.mouseBindingButtons &^= 1 << uint(button)
+}
+
+// ConsumeMouseBindingRelease reports whether a binding took the press of
+// button, and clears the mark.
+func (o *OS) ConsumeMouseBindingRelease(button tea.MouseButton) bool {
+	bit := uint16(1) << uint(button)
+	if o.mouseBindingButtons&bit == 0 {
+		return false
+	}
+	o.mouseBindingButtons &^= bit
+	return true
 }
